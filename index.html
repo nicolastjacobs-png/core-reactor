@@ -1,0 +1,1934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CORE REACTOR — Idle Clicker</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #0a0a0f; --bg-panel: #0f1018; --bg-card: #141420;
+    --border: #1e1e35; --text: #c8c8e0; --text-dim: #6a6a8a; --text-bright: #eeeeff;
+    --neon-cyan: #00f0ff; --neon-cyan-dim: #00607a;
+    --neon-magenta: #ff2afc; --neon-magenta-dim: #6a1068;
+    --neon-gold: #ffd700; --neon-green: #39ff14; --neon-red: #ff3344;
+    --glow-cyan: 0 0 20px rgba(0,240,255,.3), 0 0 60px rgba(0,240,255,.1);
+    --glow-magenta: 0 0 20px rgba(255,42,252,.3), 0 0 60px rgba(255,42,252,.1);
+  }
+  .theme-light {
+    --bg-deep: #e8e8f0; --bg-panel: #f0f0f8; --bg-card: #dddde8;
+    --border: #c0c0d0; --text: #2a2a3a; --text-dim: #6a6a80; --text-bright: #1a1a2a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg-deep); color: var(--text);
+    font-family: 'Rajdhani', sans-serif; min-height: 100vh;
+    overflow-x: hidden; position: relative; transition: background .3s, color .3s;
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(0,240,255,.04) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 50%, rgba(255,42,252,.04) 0%, transparent 60%),
+      repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,.008) 2px, rgba(255,255,255,.008) 3px);
+    pointer-events: none; z-index: 0;
+  }
+  .game-container {
+    max-width: 1100px; margin: 0 auto; padding: 20px; position: relative; z-index: 1;
+  }
+
+  /* HEADER */
+  .header { text-align: center; padding: 24px 0 16px; position: relative; }
+  .header h1 {
+    font-family: 'Orbitron', sans-serif; font-size: 2.2rem; font-weight: 900; letter-spacing: 6px;
+    background: linear-gradient(135deg, var(--neon-cyan), var(--neon-magenta));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 20px rgba(0,240,255,.3));
+  }
+  .header .subtitle {
+    font-size: .8rem; color: var(--text-dim); letter-spacing: 4px;
+    text-transform: uppercase; margin-top: 2px;
+  }
+  .settings-toggle {
+    position: absolute; top: 24px; right: 0;
+    background: var(--bg-card); border: 1px solid var(--border);
+    color: var(--text); width: 38px; height: 38px; border-radius: 8px;
+    font-size: 1.2rem; cursor: pointer; display: flex; align-items: center;
+    justify-content: center; transition: all .2s; z-index: 10;
+  }
+  .settings-toggle:hover { border-color: var(--neon-cyan); color: var(--neon-cyan); }
+
+  /* STATS BAR */
+  .stats-bar {
+    display: flex; justify-content: center; gap: 30px;
+    padding: 14px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .stat { text-align: center; }
+  .stat-label { font-size: .65rem; letter-spacing: 3px; text-transform: uppercase; color: var(--text-dim); }
+  .stat-value {
+    font-family: 'Orbitron', sans-serif; font-size: 1.4rem; font-weight: 700;
+    color: var(--neon-cyan); text-shadow: 0 0 12px rgba(0,240,255,.4);
+  }
+  .stat-value.per-sec { color: var(--neon-green); font-size: 1rem; text-shadow: 0 0 12px rgba(57,255,20,.4); }
+
+  /* BOOSTS HUD */
+  .boosts-hud {
+    display: flex; justify-content: center; gap: 6px; flex-wrap: wrap;
+    padding: 8px 0; min-height: 16px;
+  }
+  .boost-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(57,255,20,.06); border: 1px solid rgba(57,255,20,.2);
+    border-radius: 20px; padding: 2px 10px 2px 5px;
+    font-family: 'Orbitron', sans-serif; font-size: .5rem;
+    color: var(--neon-green); letter-spacing: 1px;
+  }
+  .boost-pill .pill-icon { font-size: .8rem; }
+  .boost-pill.trophy {
+    background: rgba(255,215,0,.06); border-color: rgba(255,215,0,.2); color: var(--neon-gold);
+  }
+  .compact-mode .boosts-hud { display: none; }
+
+  /* ORBITING GENERATORS */
+  .orbit-icon {
+    position: absolute; width: 28px; height: 28px;
+    margin-left: -14px; margin-top: -14px;
+    display: flex; align-items: center; justify-content: center; font-size: .9rem;
+    border-radius: 50%; background: rgba(10,10,20,.7);
+    border: 1px solid var(--neon-cyan-dim);
+    box-shadow: 0 0 8px rgba(0,240,255,.2); pointer-events: none; z-index: 3;
+    filter: drop-shadow(0 0 4px rgba(0,240,255,.4));
+  }
+  .orbit-trail {
+    position: absolute; border-radius: 50%;
+    border: 1px solid rgba(0,240,255,.06); pointer-events: none; z-index: 1;
+  }
+  .no-particles .orbit-icon { filter: none; box-shadow: none; }
+
+  /* MAIN LAYOUT */
+  .main-layout {
+    display: grid; grid-template-columns: 1fr 340px; gap: 20px; align-items: start;
+  }
+  @media (max-width: 800px) { .main-layout { grid-template-columns: 1fr; } }
+  @media (max-width: 500px) { .reactor-wrapper { width: 340px !important; height: 340px !important; } }
+  .compact-mode .main-layout { grid-template-columns: 1fr 280px; gap: 12px; }
+  .compact-mode .upgrade-card { padding: 8px 12px !important; }
+
+  /* REACTOR */
+  .reactor-section { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .reactor-wrapper {
+    position: relative; width: 440px; height: 440px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .reactor-ring {
+    position: absolute; width: 240px; height: 240px;
+    left: 50%; top: 50%; margin-left: -120px; margin-top: -120px;
+    border-radius: 50%; border: 2px solid var(--neon-cyan-dim);
+    animation: ring-spin 12s linear infinite;
+  }
+  .reactor-ring::before {
+    content: ''; position: absolute; top: -4px; left: 50%;
+    width: 8px; height: 8px; background: var(--neon-cyan);
+    border-radius: 50%; box-shadow: 0 0 12px var(--neon-cyan); transform: translateX(-50%);
+  }
+  .reactor-ring-2 {
+    position: absolute; width: 200px; height: 200px;
+    left: 50%; top: 50%; margin-left: -100px; margin-top: -100px;
+    border-radius: 50%; border: 1px solid var(--neon-magenta-dim);
+    animation: ring-spin 8s linear infinite reverse;
+  }
+  .reactor-ring-2::before {
+    content: ''; position: absolute; bottom: -3px; left: 50%;
+    width: 6px; height: 6px; background: var(--neon-magenta);
+    border-radius: 50%; box-shadow: 0 0 10px var(--neon-magenta); transform: translateX(-50%);
+  }
+  .no-animations .reactor-ring, .no-animations .reactor-ring-2 { animation: none !important; }
+  @keyframes ring-spin { to { transform: rotate(360deg); } }
+
+  .reactor-btn {
+    width: 180px; height: 180px; border-radius: 50%;
+    border: 3px solid var(--neon-cyan);
+    background: radial-gradient(circle at 40% 35%, #1a2a3a 0%, #0a0f1a 70%);
+    cursor: pointer; position: relative;
+    transition: transform .08s ease, box-shadow .08s ease;
+    box-shadow: var(--glow-cyan), inset 0 0 40px rgba(0,240,255,.08);
+    user-select: none; -webkit-tap-highlight-color: transparent; z-index: 2;
+  }
+  .reactor-btn:hover {
+    box-shadow: 0 0 30px rgba(0,240,255,.5), 0 0 80px rgba(0,240,255,.2), inset 0 0 60px rgba(0,240,255,.12);
+  }
+  .reactor-btn:active {
+    transform: scale(.93);
+    box-shadow: 0 0 40px rgba(0,240,255,.7), 0 0 100px rgba(0,240,255,.3), inset 0 0 80px rgba(0,240,255,.2);
+  }
+  .reactor-btn .icon {
+    font-size: 3rem; display: block; text-align: center;
+    line-height: 180px; filter: drop-shadow(0 0 8px rgba(0,240,255,.6));
+  }
+  .click-text {
+    font-family: 'Orbitron', sans-serif; font-size: .7rem;
+    letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase;
+  }
+
+  /* FLOAT NUMBERS */
+  .float-number {
+    position: absolute; font-family: 'Orbitron', sans-serif;
+    font-weight: 700; font-size: 1.2rem; color: var(--neon-cyan);
+    text-shadow: 0 0 10px var(--neon-cyan); pointer-events: none;
+    animation: float-up .9s ease-out forwards; z-index: 100;
+  }
+  @keyframes float-up {
+    0% { opacity:1; transform: translateY(0) scale(1); }
+    100% { opacity:0; transform: translateY(-90px) scale(1.4); }
+  }
+
+  /* UPGRADES PANEL */
+  .upgrades-panel {
+    background: var(--bg-panel); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
+  }
+  .panel-header {
+    font-family: 'Orbitron', sans-serif; font-size: .7rem;
+    letter-spacing: 2px; text-transform: uppercase;
+    padding: 12px 14px; border-bottom: 1px solid var(--border);
+    color: var(--text-dim); display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  .panel-tab { cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: all .2s; }
+  .panel-tab.active { color: var(--neon-cyan); background: rgba(0,240,255,.08); }
+  .upgrades-list {
+    max-height: 520px; overflow-y: auto;
+    scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+  }
+  .upgrade-card {
+    display: grid; grid-template-columns: 40px 1fr auto;
+    gap: 10px; align-items: center; padding: 12px 14px;
+    border-bottom: 1px solid rgba(255,255,255,.03);
+    cursor: pointer; transition: background .15s;
+  }
+  .upgrade-card:hover:not(.locked) { background: rgba(0,240,255,.04); }
+  .upgrade-card.locked { opacity: .35; cursor: not-allowed; }
+  .upgrade-icon {
+    width: 40px; height: 40px; border-radius: 8px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+  }
+  .upgrade-info h3 {
+    font-family: 'Orbitron', sans-serif; font-size: .7rem;
+    font-weight: 700; letter-spacing: 1px; color: var(--text-bright);
+  }
+  .upgrade-info .desc { font-size: .7rem; color: var(--text-dim); margin-top: 1px; }
+  .upgrade-info .owned { font-size: .6rem; color: var(--neon-cyan); margin-top: 1px; letter-spacing: 1px; }
+  .upgrade-cost {
+    font-family: 'Orbitron', sans-serif; font-size: .75rem;
+    color: var(--neon-gold); text-shadow: 0 0 6px rgba(255,215,0,.3); white-space: nowrap;
+  }
+
+  /* ACHIEVEMENTS */
+  .achievements-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px; padding: 12px 14px;
+  }
+  .achievement {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px; text-align: center; opacity: .3; transition: all .3s;
+  }
+  .achievement.unlocked { opacity: 1; border-color: var(--neon-gold); box-shadow: 0 0 12px rgba(255,215,0,.15); }
+  .achievement .ach-icon { font-size: 1.4rem; }
+  .achievement .ach-name {
+    font-size: .6rem; margin-top: 3px; color: var(--text-dim);
+    letter-spacing: 1px; text-transform: uppercase; font-family: 'Orbitron', sans-serif;
+  }
+  .achievement .ach-bonus { font-size: .5rem; margin-top: 2px; color: var(--neon-gold); }
+
+  /* PRESTIGE BAR */
+  .prestige-bar {
+    display: flex; justify-content: center; margin-top: 16px;
+    gap: 16px; flex-wrap: wrap; align-items: center;
+  }
+  .prestige-btn {
+    font-family: 'Orbitron', sans-serif; font-size: .65rem; letter-spacing: 2px;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, rgba(255,42,252,.15), rgba(255,42,252,.05));
+    border: 1px solid var(--neon-magenta-dim); color: var(--neon-magenta);
+    padding: 8px 20px; border-radius: 6px; cursor: pointer; transition: all .2s;
+  }
+  .prestige-btn:hover {
+    background: linear-gradient(135deg, rgba(255,42,252,.25), rgba(255,42,252,.1));
+    box-shadow: var(--glow-magenta);
+  }
+  .prestige-btn:disabled { opacity: .3; cursor: not-allowed; }
+  .prestige-info { font-size: .7rem; color: var(--text-dim); }
+  .prestige-info span { color: var(--neon-magenta); font-family: 'Orbitron', sans-serif; }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--bg-card); border: 1px solid var(--neon-gold);
+    color: var(--neon-gold); padding: 10px 24px; border-radius: 8px;
+    font-family: 'Orbitron', sans-serif; font-size: .7rem; letter-spacing: 2px;
+    box-shadow: 0 0 30px rgba(255,215,0,.2);
+    opacity: 0; transition: all .4s ease; z-index: 999; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* MODALS */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.75);
+    backdrop-filter: blur(6px); z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity .3s ease;
+  }
+  .modal-overlay.show { opacity: 1; pointer-events: auto; }
+  .modal {
+    background: var(--bg-panel); border: 1px solid var(--neon-cyan-dim);
+    border-radius: 16px; padding: 30px 36px; text-align: center;
+    max-width: 420px; width: 92%;
+    box-shadow: 0 0 60px rgba(0,240,255,.15);
+    transform: scale(.9); transition: transform .3s ease;
+  }
+  .modal-overlay.show .modal { transform: scale(1); }
+  .modal h2 {
+    font-family: 'Orbitron', sans-serif; font-size: 1rem;
+    letter-spacing: 3px; color: var(--neon-cyan); margin-bottom: 6px;
+  }
+  .modal .modal-sub { font-size: .75rem; color: var(--text-dim); margin-bottom: 16px; }
+  .modal .offline-amount {
+    font-family: 'Orbitron', sans-serif; font-size: 1.8rem; font-weight: 900;
+    color: var(--neon-green); text-shadow: 0 0 20px rgba(57,255,20,.4); margin: 10px 0;
+  }
+  .modal .offline-time { font-size: .7rem; color: var(--text-dim); margin-bottom: 20px; }
+  .modal-btn {
+    font-family: 'Orbitron', sans-serif; font-size: .7rem; letter-spacing: 2px;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, rgba(0,240,255,.2), rgba(0,240,255,.05));
+    border: 1px solid var(--neon-cyan-dim); color: var(--neon-cyan);
+    padding: 10px 28px; border-radius: 8px; cursor: pointer; transition: all .2s;
+  }
+  .modal-btn:hover {
+    background: linear-gradient(135deg, rgba(0,240,255,.3), rgba(0,240,255,.1));
+    box-shadow: var(--glow-cyan);
+  }
+
+  /* SETTINGS PANEL */
+  .settings-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.7);
+    backdrop-filter: blur(4px); z-index: 2000;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity .25s;
+  }
+  .settings-overlay.show { opacity: 1; pointer-events: auto; }
+  .settings-panel {
+    background: var(--bg-panel); border: 1px solid var(--border);
+    border-radius: 14px; width: 94%; max-width: 520px; max-height: 85vh;
+    overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+    transform: translateY(20px); transition: transform .25s;
+  }
+  .settings-overlay.show .settings-panel { transform: translateY(0); }
+  .settings-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 18px 22px; border-bottom: 1px solid var(--border);
+  }
+  .settings-head h2 {
+    font-family: 'Orbitron', sans-serif; font-size: .9rem;
+    letter-spacing: 3px; color: var(--neon-cyan);
+  }
+  .settings-close {
+    background: none; border: none; color: var(--text-dim);
+    font-size: 1.4rem; cursor: pointer; padding: 4px;
+  }
+  .settings-close:hover { color: var(--neon-red); }
+  .settings-section {
+    padding: 14px 22px; border-bottom: 1px solid rgba(255,255,255,.03);
+  }
+  .settings-section:last-child { border-bottom: none; }
+  .settings-section h3 {
+    font-family: 'Orbitron', sans-serif; font-size: .6rem;
+    letter-spacing: 2px; text-transform: uppercase;
+    color: var(--neon-magenta); margin-bottom: 10px;
+  }
+  .setting-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 0; gap: 12px;
+  }
+  .setting-row label {
+    font-size: .8rem; color: var(--text); flex: 1;
+  }
+  .setting-row .hint {
+    font-size: .6rem; color: var(--text-dim); display: block; margin-top: 1px;
+  }
+  /* Toggle switch */
+  .toggle {
+    position: relative; width: 40px; height: 22px; flex-shrink: 0;
+    display: inline-block;
+  }
+  .toggle input { 
+    opacity: 0; width: 0; height: 0; position: absolute;
+  }
+  .toggle .slider {
+    position: absolute; inset: 0; background: var(--bg-card);
+    border: 1px solid var(--border); border-radius: 12px;
+    cursor: pointer; transition: all .2s;
+  }
+  .toggle .slider::before {
+    content: ''; position: absolute; width: 16px; height: 16px;
+    left: 2px; top: 2px; background: var(--text-dim);
+    border-radius: 50%; transition: all .2s;
+  }
+  .toggle input:checked + .slider { border-color: var(--neon-cyan); }
+  .toggle input:checked + .slider::before {
+    transform: translateX(18px); background: var(--neon-cyan);
+  }
+  /* Range slider */
+  input[type="range"] {
+    -webkit-appearance: none; width: 100px; height: 4px;
+    background: var(--border); border-radius: 2px; outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px;
+    background: var(--neon-cyan); border-radius: 50%; cursor: pointer;
+  }
+  /* Select */
+  .setting-select {
+    background: var(--bg-card); border: 1px solid var(--border);
+    color: var(--text); padding: 4px 8px; border-radius: 6px;
+    font-family: 'Rajdhani', sans-serif; font-size: .8rem;
+    cursor: pointer;
+  }
+  /* Buttons row */
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+  .s-btn {
+    font-family: 'Orbitron', sans-serif; font-size: .55rem;
+    letter-spacing: 1px; text-transform: uppercase;
+    padding: 6px 14px; border-radius: 6px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--bg-card);
+    color: var(--text); transition: all .15s;
+  }
+  .s-btn:hover { border-color: var(--neon-cyan); color: var(--neon-cyan); }
+  .s-btn.danger { border-color: var(--neon-red); color: var(--neon-red); }
+  .s-btn.danger:hover { background: rgba(255,51,68,.1); }
+  .s-btn.primary { border-color: var(--neon-cyan); color: var(--neon-cyan); }
+  /* Export textarea */
+  .export-box {
+    width: 100%; height: 60px; margin-top: 6px;
+    background: var(--bg-deep); border: 1px solid var(--border);
+    color: var(--text-dim); font-size: .65rem; padding: 6px;
+    border-radius: 6px; resize: none; font-family: monospace;
+  }
+  .hotkey-display {
+    font-family: 'Orbitron', sans-serif; font-size: .55rem;
+    color: var(--text-dim); background: var(--bg-card);
+    border: 1px solid var(--border); padding: 2px 6px;
+    border-radius: 4px; letter-spacing: 1px;
+  }
+
+  /* SAVE INDICATOR */
+  .save-indicator {
+    position: fixed; top: 16px; right: 20px;
+    font-family: 'Orbitron', sans-serif; font-size: .6rem;
+    letter-spacing: 2px; color: var(--text-dim); z-index: 500;
+    opacity: 0; transition: opacity .3s;
+  }
+  .save-indicator.show { opacity: 1; }
+
+  /* PARTICLES */
+  .particle {
+    position: absolute; width: 4px; height: 4px;
+    border-radius: 50%; pointer-events: none; z-index: 50;
+  }
+  @keyframes particle-burst {
+    0% { opacity:1; transform: translate(0,0) scale(1); }
+    100% { opacity:0; transform: translate(var(--dx), var(--dy)) scale(0); }
+  }
+  .no-particles .particle { display: none !important; }
+  .no-particles .float-number { display: none !important; }
+
+  /* ANTI-AUTOCLICKER OVERLAY */
+  .ac-overlay { z-index: 3000; }
+  .ac-modal { max-width: 380px; }
+  .ac-icon { font-size: 3rem; margin-bottom: 8px; }
+  .ac-title {
+    font-family: 'Orbitron', sans-serif; font-size: 1rem;
+    letter-spacing: 2px; color: var(--neon-red); margin-bottom: 6px;
+  }
+  .ac-reason-text {
+    font-size: .75rem; color: var(--text-dim); margin-bottom: 4px;
+  }
+  .ac-penalty-text {
+    font-family: 'Orbitron', sans-serif; font-size: .7rem;
+    color: var(--neon-gold); letter-spacing: 1px; margin-bottom: 16px;
+  }
+  .ac-challenge { margin-top: 8px; }
+  .ac-challenge-label {
+    font-size: .7rem; color: var(--text-dim); margin-bottom: 8px;
+  }
+  .ac-question {
+    font-family: 'Orbitron', sans-serif; font-size: 1.4rem;
+    color: var(--neon-cyan); margin-bottom: 10px;
+    text-shadow: 0 0 10px rgba(0,240,255,.3);
+  }
+  .ac-input {
+    width: 100px; padding: 8px 12px; border-radius: 8px; text-align: center;
+    background: var(--bg-deep); border: 1px solid var(--border);
+    color: var(--text); font-family: 'Orbitron', sans-serif;
+    font-size: 1.1rem; outline: none; transition: border-color .2s;
+    margin-bottom: 8px;
+  }
+  .ac-input:focus { border-color: var(--neon-cyan); }
+  .ac-error {
+    font-size: .65rem; color: var(--neon-red); min-height: 16px;
+    margin-bottom: 6px;
+  }
+  .ac-submit { margin-top: 4px; }
+
+  /* LOGIN BUTTON */
+  .login-toggle {
+    position: absolute; top: 24px; left: 0;
+    background: var(--bg-card); border: 1px solid var(--border);
+    color: var(--text); height: 38px; border-radius: 8px;
+    font-size: .9rem; cursor: pointer; display: flex; align-items: center;
+    gap: 6px; padding: 0 12px; transition: all .2s; z-index: 10;
+  }
+  .login-toggle:hover { border-color: var(--neon-cyan); }
+  .login-name {
+    font-family: 'Orbitron', sans-serif; font-size: .55rem;
+    letter-spacing: 1px; color: var(--neon-cyan);
+  }
+
+  /* AUTH MODAL */
+  .auth-modal-inner { position: relative; text-align: center; }
+  .auth-close { position: absolute; top: 12px; right: 14px; }
+  .auth-field { margin-bottom: 10px; }
+  .auth-input {
+    width: 100%; padding: 10px 14px; border-radius: 8px;
+    background: var(--bg-deep); border: 1px solid var(--border);
+    color: var(--text); font-family: 'Rajdhani', sans-serif;
+    font-size: .85rem; outline: none; transition: border-color .2s;
+  }
+  .auth-input:focus { border-color: var(--neon-cyan); }
+  .auth-input::placeholder { color: var(--text-dim); }
+  .auth-error {
+    font-size: .7rem; color: var(--neon-red); min-height: 18px;
+    margin-bottom: 6px;
+  }
+  .auth-btn { width: 100%; margin-bottom: 12px; }
+  .auth-switch {
+    font-size: .75rem; color: var(--text-dim); margin-bottom: 12px;
+  }
+  .auth-link {
+    background: none; border: none; color: var(--neon-cyan);
+    cursor: pointer; font-family: 'Rajdhani', sans-serif;
+    font-size: .75rem; text-decoration: underline;
+  }
+  .auth-divider {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 12px; color: var(--text-dim); font-size: .7rem;
+  }
+  .auth-divider::before, .auth-divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+  .auth-guest-btn { width: 100%; }
+  .account-avatar {
+    font-size: 2.5rem; margin-bottom: 8px;
+  }
+  .account-email {
+    font-family: 'Orbitron', sans-serif; font-size: .75rem;
+    color: var(--neon-cyan); letter-spacing: 1px; margin-bottom: 4px;
+  }
+  .account-status {
+    font-size: .7rem; color: var(--neon-green); margin-bottom: 6px;
+  }
+
+  /* TUTORIAL */
+  .tutorial-content { display: flex; flex-direction: column; gap: 10px; }
+  .tutorial-block {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; text-align: left;
+  }
+  .tutorial-title {
+    font-family: 'Orbitron', sans-serif; font-size: .6rem;
+    letter-spacing: 1px; color: var(--neon-cyan); margin-bottom: 5px;
+  }
+  .tutorial-text {
+    font-size: .75rem; color: var(--text); line-height: 1.5;
+  }
+  .tutorial-text b { font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="game-container">
+  <div class="header">
+    <h1>CORE REACTOR</h1>
+    <div class="subtitle" id="subtitle">Harness the power of the void</div>
+    <button class="settings-toggle" id="settings-toggle" title="Settings (S)">⚙</button>
+    <button class="login-toggle" id="login-toggle" title="Account">
+      <span id="login-icon">👤</span>
+      <span class="login-name" id="login-name"></span>
+    </button>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat"><div class="stat-label" data-i18n="energy">Energy</div><div class="stat-value" id="energy">0</div></div>
+    <div class="stat"><div class="stat-label" data-i18n="perSec">Per Second</div><div class="stat-value per-sec" id="eps">0</div></div>
+    <div class="stat"><div class="stat-label" data-i18n="perClick">Per Click</div><div class="stat-value per-sec" id="epc">1</div></div>
+    <div class="stat"><div class="stat-label" data-i18n="plasmaCores">Plasma Cores</div><div class="stat-value" id="prestige-cores" style="color:var(--neon-magenta);text-shadow:0 0 12px rgba(255,42,252,.4)">0</div></div>
+  </div>
+
+  <div class="boosts-hud" id="boosts-hud"></div>
+
+  <div class="main-layout">
+    <div class="reactor-section">
+      <div class="reactor-wrapper" id="reactor-wrapper">
+        <div class="reactor-ring"></div>
+        <div class="reactor-ring-2"></div>
+        <button class="reactor-btn" id="reactor-btn"><span class="icon">⚛</span></button>
+      </div>
+      <div class="click-text" data-i18n="clickReactor">Click the reactor</div>
+      <div class="prestige-bar">
+        <div class="prestige-info"><span data-i18n="prestigeFor">Prestige for</span> <span id="prestige-gain">0</span> <span data-i18n="plasmaCores">Plasma Cores</span></div>
+        <button class="prestige-btn" id="prestige-btn" disabled data-i18n="prestige">PRESTIGE</button>
+      </div>
+    </div>
+
+    <div class="upgrades-panel">
+      <div class="panel-header">
+        <div class="panel-tab active" data-tab="generators" data-i18n="generators">Generators</div>
+        <div class="panel-tab" data-tab="boosts" data-i18n="boosts">Boosts</div>
+        <div class="panel-tab" data-tab="achievements" data-i18n="trophies">Trophies</div>
+      </div>
+      <div class="upgrades-list" id="upgrades-list"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="save-indicator" id="save-indicator">SAVED ✓</div>
+
+<!-- ANTI-AUTOCLICKER OVERLAY -->
+<div class="modal-overlay ac-overlay" id="ac-overlay">
+  <div class="modal ac-modal">
+    <div class="ac-icon">🛡️</div>
+    <h2 class="ac-title">AUTOCLICKER DETECTED</h2>
+    <div class="ac-reason-text" id="ac-reason">Clicking too fast</div>
+    <div class="ac-penalty-text" id="ac-penalty">Clicking disabled for 3s</div>
+    <div class="ac-challenge">
+      <div class="ac-challenge-label">Solve to unlock early:</div>
+      <div class="ac-question" id="ac-question">12 + 7 = ?</div>
+      <input type="number" class="ac-input" id="ac-input" placeholder="?" inputmode="numeric">
+      <div class="ac-error" id="ac-error"></div>
+      <button class="modal-btn ac-submit" id="ac-submit">VERIFY</button>
+    </div>
+  </div>
+</div>
+
+<!-- OFFLINE MODAL -->
+<div class="modal-overlay" id="offline-modal">
+  <div class="modal">
+    <h2 data-i18n="welcomeBack">WELCOME BACK</h2>
+    <div class="modal-sub" data-i18n="offlineSub">Your reactors kept running while you were away</div>
+    <div class="offline-amount" id="offline-amount">+0</div>
+    <div class="offline-time" id="offline-time"></div>
+    <button class="modal-btn" id="offline-collect" data-i18n="collectEnergy">COLLECT ENERGY</button>
+  </div>
+</div>
+
+<!-- SETTINGS OVERLAY -->
+<div class="settings-overlay" id="settings-overlay">
+  <div class="settings-panel">
+    <div class="settings-head">
+      <h2 data-i18n="settings">SETTINGS</h2>
+      <button class="settings-close" id="settings-close">✕</button>
+    </div>
+
+    <!-- HOW TO PLAY -->
+    <div class="settings-section">
+      <h3>📖 How to Play</h3>
+      <div class="tutorial-content">
+        <div class="tutorial-block">
+          <div class="tutorial-title">⚛ The Basics</div>
+          <div class="tutorial-text">Tap the reactor core to generate <b style="color:var(--neon-cyan)">energy</b>. Energy is your currency — use it to buy generators that produce energy automatically every second.</div>
+        </div>
+        <div class="tutorial-block">
+          <div class="tutorial-title">🛸 Generators</div>
+          <div class="tutorial-text">Buy generators in the <b>Generators</b> tab. Each type produces more energy per second but costs more. Owned generators orbit the reactor as glowing icons. Stack multiples for higher output.</div>
+        </div>
+        <div class="tutorial-block">
+          <div class="tutorial-title">⚡ Boosts</div>
+          <div class="tutorial-text">One-time permanent upgrades in the <b>Boosts</b> tab. Click multipliers increase your tap power. Generator multipliers scale all passive income. Active boosts show as green pills below your stats.</div>
+        </div>
+        <div class="tutorial-block">
+          <div class="tutorial-title">🏆 Trophies</div>
+          <div class="tutorial-text">Achievements unlock automatically as you hit milestones (total clicks, energy earned, generators owned). Each trophy grants a <b style="color:var(--neon-gold)">permanent bonus</b> — shown as gold pills in the HUD.</div>
+        </div>
+        <div class="tutorial-block">
+          <div class="tutorial-title">🔮 Prestige &amp; Ascension</div>
+          <div class="tutorial-text">Once you've earned enough <b>total energy</b> (1M+), you can <b style="color:var(--neon-magenta)">Prestige</b> to reset your energy and generators in exchange for <b style="color:var(--neon-magenta)">Plasma Cores</b>.</div>
+          <div class="tutorial-text" style="margin-top:6px;">Each Plasma Core gives a <b>+10% permanent multiplier</b> to ALL production and click power. This stacks — 10 cores = 2x everything, 50 cores = 6x everything.</div>
+          <div class="tutorial-text" style="margin-top:6px;">Your boosts and trophies survive prestige. The formula is: <b style="color:var(--neon-magenta)">Cores = √(total energy ÷ 1,000,000)</b>. The more you earn before prestiging, the more cores you get.</div>
+          <div class="tutorial-text" style="margin-top:6px;color:var(--neon-gold)">💡 Tip: Wait until you can get at least 5–10 cores before your first prestige. Early resets for 1–2 cores aren't worth it.</div>
+        </div>
+        <div class="tutorial-block">
+          <div class="tutorial-title">☁️ Cloud Saves</div>
+          <div class="tutorial-text">Create an account (👤 button) to sync progress across devices. Your save auto-syncs every 30 seconds and when you close the tab. You can also export your save as text from Settings → Save &amp; Load.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AUDIO -->
+    <div class="settings-section">
+      <h3>🔊 Audio</h3>
+      <div class="setting-row">
+        <label>Reactor Click Vol<span class="hint">Sound when tapping the reactor</span></label>
+        <input type="range" id="opt-vol-click" min="0" max="100" value="50">
+      </div>
+      <div class="setting-row">
+        <label>UI / SFX Vol<span class="hint">Purchase, achievement, and UI sounds</span></label>
+        <input type="range" id="opt-vol-sfx" min="0" max="100" value="50">
+      </div>
+    </div>
+
+    <!-- SAVE / LOAD -->
+    <div class="settings-section">
+      <h3>💾 Save &amp; Load</h3>
+      <div class="btn-row">
+        <button class="s-btn primary" id="btn-save">Manual Save</button>
+        <button class="s-btn" id="btn-export">Export Save</button>
+        <button class="s-btn" id="btn-import">Import Save</button>
+      </div>
+      <textarea class="export-box" id="export-box" placeholder="Paste save data here to import..." style="display:none"></textarea>
+      <div class="btn-row" id="import-actions" style="display:none">
+        <button class="s-btn primary" id="btn-import-confirm">Confirm Import</button>
+        <button class="s-btn" id="btn-import-cancel">Cancel</button>
+      </div>
+    </div>
+
+    <!-- PRESTIGE / RESET -->
+    <div class="settings-section">
+      <h3>🔮 Prestige &amp; Reset</h3>
+      <div class="btn-row">
+        <button class="s-btn" id="btn-prestige-settings">Prestige Now</button>
+        <button class="s-btn danger" id="btn-hard-reset">Hard Reset (Wipe All)</button>
+      </div>
+    </div>
+
+    <!-- LANGUAGE -->
+    <div class="settings-section">
+      <h3>🌐 Language</h3>
+      <div class="setting-row">
+        <label>Display Language</label>
+        <select class="setting-select" id="opt-lang">
+          <option value="en">English</option>
+          <option value="es">Español</option>
+          <option value="fr">Français</option>
+          <option value="de">Deutsch</option>
+          <option value="ja">日本語</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- VISUALS -->
+    <div class="settings-section">
+      <h3>🎨 Visuals</h3>
+      <div class="setting-row">
+        <label>Theme</label>
+        <select class="setting-select" id="opt-theme">
+          <option value="dark">Dark</option>
+          <option value="light">Light</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <label>Compact UI</label>
+        <label class="toggle"><input type="checkbox" id="opt-compact"><span class="slider"></span></label>
+      </div>
+      <div class="setting-row">
+        <label>Particles &amp; Floaters<span class="hint">Disable to reduce GPU usage</span></label>
+        <label class="toggle"><input type="checkbox" id="opt-particles" checked><span class="slider"></span></label>
+      </div>
+      <div class="setting-row">
+        <label>Animations<span class="hint">Ring spin, pill glow, orbit motion</span></label>
+        <label class="toggle"><input type="checkbox" id="opt-animations" checked><span class="slider"></span></label>
+      </div>
+    </div>
+
+    <!-- GAMEPLAY -->
+    <div class="settings-section">
+      <h3>🎮 Gameplay</h3>
+      <div class="setting-row">
+        <label>Hold to Click<span class="hint">Hold reactor to auto-click 10/sec</span></label>
+        <label class="toggle"><input type="checkbox" id="opt-hold"><span class="slider"></span></label>
+      </div>
+      <div class="setting-row">
+        <label>Offline Progress<span class="hint">Earn energy while away</span></label>
+        <label class="toggle"><input type="checkbox" id="opt-offline" checked><span class="slider"></span></label>
+      </div>
+      <div class="setting-row">
+        <label>Offline Earnings Popup</label>
+        <label class="toggle"><input type="checkbox" id="opt-offline-popup" checked><span class="slider"></span></label>
+      </div>
+    </div>
+
+    <!-- PERFORMANCE -->
+    <div class="settings-section">
+      <h3>⚡ Performance</h3>
+      <div class="setting-row">
+        <label>FPS Cap<span class="hint">Lower = less battery drain</span></label>
+        <select class="setting-select" id="opt-fps">
+          <option value="60">60 FPS</option>
+          <option value="30">30 FPS</option>
+          <option value="15">15 FPS</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- HOTKEYS -->
+    <div class="settings-section">
+      <h3>⌨️ Hotkeys</h3>
+      <div class="setting-row"><label>Open Settings</label><span class="hotkey-display">S</span></div>
+      <div class="setting-row"><label>Generators Tab</label><span class="hotkey-display">1</span></div>
+      <div class="setting-row"><label>Boosts Tab</label><span class="hotkey-display">2</span></div>
+      <div class="setting-row"><label>Trophies Tab</label><span class="hotkey-display">3</span></div>
+      <div class="setting-row"><label>Quick Save</label><span class="hotkey-display">Ctrl+S</span></div>
+      <div class="setting-row"><label>Click Reactor</label><span class="hotkey-display">Space</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="modal-overlay" id="auth-modal">
+  <div class="modal auth-modal-inner">
+    <h2 id="auth-title">SIGN IN</h2>
+    <div class="modal-sub" id="auth-sub">Sync your progress across devices</div>
+
+    <!-- Login/Register Form -->
+    <div id="auth-form">
+      <div class="auth-field">
+        <input type="email" id="auth-email" placeholder="Email address" class="auth-input" autocomplete="email">
+      </div>
+      <div class="auth-field">
+        <input type="password" id="auth-pass" placeholder="Password" class="auth-input" autocomplete="current-password">
+      </div>
+      <div class="auth-error" id="auth-error"></div>
+      <button class="modal-btn auth-btn" id="auth-submit">SIGN IN</button>
+      <div class="auth-switch">
+        <span id="auth-switch-text">No account?</span>
+        <button class="auth-link" id="auth-switch-btn">Create one</button>
+      </div>
+      <div class="auth-divider"><span>or</span></div>
+      <button class="s-btn auth-guest-btn" id="auth-guest">Continue as Guest</button>
+    </div>
+
+    <!-- Logged-in Account Panel -->
+    <div id="auth-account" style="display:none">
+      <div class="account-avatar" id="account-avatar">👤</div>
+      <div class="account-email" id="account-email">not signed in</div>
+      <div class="account-status" id="account-status">● Cloud save synced</div>
+      <div class="btn-row" style="justify-content:center;margin-top:14px;">
+        <button class="s-btn primary" id="btn-cloud-save">Sync Now</button>
+        <button class="s-btn danger" id="btn-logout">Log Out</button>
+      </div>
+    </div>
+
+    <button class="settings-close auth-close" id="auth-close">✕</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+//  CLOUD AUTH & SAVE SCAFFOLDING
+// ══════════════════════════════════════════════
+// ──────────────────────────────────────────────
+//  HOW TO CONNECT TO FIREBASE:
+//
+//  1. Create a Firebase project at https://console.firebase.google.com
+//  2. Enable Authentication → Email/Password sign-in method
+//  3. Enable Cloud Firestore (or Realtime Database)
+//  4. Add your Firebase config below in FIREBASE_CONFIG
+//  5. Add these script tags to <head>:
+//     <script src="https://www.gstatic.com/firebasejs/10.x/firebase-app-compat.js"><\/script>
+//     <script src="https://www.gstatic.com/firebasejs/10.x/firebase-auth-compat.js"><\/script>
+//     <script src="https://www.gstatic.com/firebasejs/10.x/firebase-firestore-compat.js"><\/script>
+//  6. Uncomment the Firebase sections marked with // 🔥 FIREBASE
+// ──────────────────────────────────────────────
+
+const FIREBASE_CONFIG = {
+  // TODO: Paste your Firebase config here
+  // apiKey: "YOUR_API_KEY",
+  // authDomain: "YOUR_PROJECT.firebaseapp.com",
+  // projectId: "YOUR_PROJECT_ID",
+  // storageBucket: "YOUR_PROJECT.appspot.com",
+  // messagingSenderId: "YOUR_SENDER_ID",
+  // appId: "YOUR_APP_ID"
+};
+
+// Auth state
+let currentUser = null;
+let authMode = 'login'; // 'login' or 'register'
+
+// ── Check if Firebase is available ──
+function hasFirebase() {
+  return typeof firebase !== 'undefined' && FIREBASE_CONFIG.apiKey;
+}
+
+// ── Initialize Firebase (call once) ──
+function initFirebase() {
+  if (!hasFirebase()) return;
+  // 🔥 FIREBASE: Uncomment below
+  // firebase.initializeApp(FIREBASE_CONFIG);
+  // firebase.auth().onAuthStateChanged(user => {
+  //   if (user) {
+  //     currentUser = { uid: user.uid, email: user.email };
+  //     onLoginSuccess();
+  //     loadCloudSave();
+  //   } else {
+  //     currentUser = null;
+  //     updateLoginUI();
+  //   }
+  // });
+}
+
+// ── Sign In ──
+async function signIn(email, password) {
+  if (hasFirebase()) {
+    // 🔥 FIREBASE: Uncomment below
+    // try {
+    //   await firebase.auth().signInWithEmailAndPassword(email, password);
+    //   return { success: true };
+    // } catch (e) {
+    //   return { success: false, error: e.message };
+    // }
+  }
+  // DEMO MODE: Simulate login with localStorage
+  const users = JSON.parse(localStorage.getItem('coreReactorUsers') || '{}');
+  if (users[email] && users[email].password === password) {
+    currentUser = { uid: email, email: email };
+    localStorage.setItem('coreReactorCurrentUser', email);
+    onLoginSuccess();
+    loadCloudSave();
+    return { success: true };
+  }
+  if (users[email]) return { success: false, error: 'Incorrect password' };
+  return { success: false, error: 'Account not found' };
+}
+
+// ── Register ──
+async function register(email, password) {
+  if (hasFirebase()) {
+    // 🔥 FIREBASE: Uncomment below
+    // try {
+    //   await firebase.auth().createUserWithEmailAndPassword(email, password);
+    //   return { success: true };
+    // } catch (e) {
+    //   return { success: false, error: e.message };
+    // }
+  }
+  // DEMO MODE
+  const users = JSON.parse(localStorage.getItem('coreReactorUsers') || '{}');
+  if (users[email]) return { success: false, error: 'Account already exists' };
+  users[email] = { password, createdAt: Date.now() };
+  localStorage.setItem('coreReactorUsers', JSON.stringify(users));
+  currentUser = { uid: email, email: email };
+  localStorage.setItem('coreReactorCurrentUser', email);
+  onLoginSuccess();
+  saveCloudSave();
+  return { success: true };
+}
+
+// ── Sign Out ──
+async function signOut() {
+  if (hasFirebase()) {
+    // 🔥 FIREBASE: Uncomment below
+    // await firebase.auth().signOut();
+  }
+  currentUser = null;
+  localStorage.removeItem('coreReactorCurrentUser');
+  updateLoginUI();
+  showToast('👋 Logged out');
+}
+
+// ── Cloud Save ──
+async function saveCloudSave() {
+  if (!currentUser) return;
+  const saveData = {
+    energy: state.energy, totalEnergy: state.totalEnergy, totalClicks: state.totalClicks,
+    prestigeCores: state.prestigeCores, prestigeMultiplier: state.prestigeMultiplier,
+    generators: state.generators, boosts: state.boosts,
+    achievements: [...state.achievements], lastSave: Date.now()
+  };
+
+  if (hasFirebase()) {
+    // 🔥 FIREBASE: Uncomment below
+    // try {
+    //   await firebase.firestore().collection('saves').doc(currentUser.uid).set(saveData);
+    //   showToast('☁️ Cloud save synced!');
+    // } catch (e) {
+    //   showToast('❌ Cloud sync failed');
+    // }
+    return;
+  }
+
+  // DEMO MODE: Save per-user in localStorage
+  const cloudSaves = JSON.parse(localStorage.getItem('coreReactorCloudSaves') || '{}');
+  cloudSaves[currentUser.uid] = saveData;
+  localStorage.setItem('coreReactorCloudSaves', JSON.stringify(cloudSaves));
+  showToast('☁️ Cloud save synced!');
+}
+
+async function loadCloudSave() {
+  if (!currentUser) return;
+  let cloudData = null;
+
+  if (hasFirebase()) {
+    // 🔥 FIREBASE: Uncomment below
+    // try {
+    //   const doc = await firebase.firestore().collection('saves').doc(currentUser.uid).get();
+    //   if (doc.exists) cloudData = doc.data();
+    // } catch (e) { console.warn('Cloud load failed', e); }
+  } else {
+    // DEMO MODE
+    const cloudSaves = JSON.parse(localStorage.getItem('coreReactorCloudSaves') || '{}');
+    cloudData = cloudSaves[currentUser.uid];
+  }
+
+  if (!cloudData) {
+    // No cloud save — upload current local save
+    saveCloudSave();
+    return;
+  }
+
+  // Merge: use whichever save is newer
+  const localRaw = localStorage.getItem('coreReactorSave');
+  const localData = localRaw ? JSON.parse(localRaw) : null;
+  const localTime = localData ? (localData.lastSave || 0) : 0;
+  const cloudTime = cloudData.lastSave || 0;
+
+  if (cloudTime > localTime) {
+    // Cloud is newer — load it
+    state.energy = cloudData.energy || 0;
+    state.totalEnergy = cloudData.totalEnergy || 0;
+    state.totalClicks = cloudData.totalClicks || 0;
+    state.prestigeCores = cloudData.prestigeCores || 0;
+    state.prestigeMultiplier = cloudData.prestigeMultiplier || 1;
+    state.generators = cloudData.generators || {};
+    state.boosts = cloudData.boosts || {};
+    state.achievements = new Set(cloudData.achievements || []);
+    recalcAll(); renderUpgrades(); checkRebuild(); renderBoostsHud(); updateDisplay();
+    showToast('☁️ Cloud save loaded!');
+  } else {
+    // Local is newer — push to cloud
+    saveCloudSave();
+  }
+}
+
+// ── Login UI ──
+function onLoginSuccess() {
+  updateLoginUI();
+  document.getElementById('auth-form').style.display = 'none';
+  document.getElementById('auth-account').style.display = 'block';
+  document.getElementById('account-email').textContent = currentUser.email;
+  document.getElementById('auth-title').textContent = 'ACCOUNT';
+  document.getElementById('auth-sub').textContent = 'Manage your cloud profile';
+  document.getElementById('account-status').textContent = '● Cloud save synced';
+  document.getElementById('account-status').style.color = 'var(--neon-green)';
+}
+
+function updateLoginUI() {
+  const nameEl = document.getElementById('login-name');
+  const iconEl = document.getElementById('login-icon');
+  if (currentUser) {
+    const shortName = currentUser.email.split('@')[0];
+    nameEl.textContent = shortName;
+    iconEl.textContent = '🟢';
+  } else {
+    nameEl.textContent = '';
+    iconEl.textContent = '👤';
+  }
+}
+
+function showAuthModal() {
+  const modal = document.getElementById('auth-modal');
+  if (currentUser) {
+    document.getElementById('auth-form').style.display = 'none';
+    document.getElementById('auth-account').style.display = 'block';
+    document.getElementById('auth-title').textContent = 'ACCOUNT';
+    document.getElementById('auth-sub').textContent = 'Manage your cloud profile';
+    document.getElementById('account-email').textContent = currentUser.email;
+  } else {
+    document.getElementById('auth-form').style.display = 'block';
+    document.getElementById('auth-account').style.display = 'none';
+    authMode = 'login';
+    updateAuthForm();
+  }
+  modal.classList.add('show');
+}
+
+function updateAuthForm() {
+  document.getElementById('auth-title').textContent = authMode === 'login' ? 'SIGN IN' : 'CREATE ACCOUNT';
+  document.getElementById('auth-sub').textContent = authMode === 'login'
+    ? 'Sync your progress across devices'
+    : 'Create an account to save in the cloud';
+  document.getElementById('auth-submit').textContent = authMode === 'login' ? 'SIGN IN' : 'CREATE ACCOUNT';
+  document.getElementById('auth-switch-text').textContent = authMode === 'login' ? 'No account?' : 'Already have one?';
+  document.getElementById('auth-switch-btn').textContent = authMode === 'login' ? 'Create one' : 'Sign in';
+  document.getElementById('auth-error').textContent = '';
+}
+
+// ── Auth event wiring ──
+document.getElementById('login-toggle').addEventListener('click', showAuthModal);
+document.getElementById('auth-close').addEventListener('click', () => {
+  document.getElementById('auth-modal').classList.remove('show');
+});
+document.getElementById('auth-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) document.getElementById('auth-modal').classList.remove('show');
+});
+
+document.getElementById('auth-switch-btn').addEventListener('click', () => {
+  authMode = authMode === 'login' ? 'register' : 'login';
+  updateAuthForm();
+});
+
+document.getElementById('auth-submit').addEventListener('click', async () => {
+  const email = document.getElementById('auth-email').value.trim();
+  const pass = document.getElementById('auth-pass').value;
+  const errEl = document.getElementById('auth-error');
+  if (!email || !pass) { errEl.textContent = 'Please fill in all fields'; return; }
+  if (pass.length < 6) { errEl.textContent = 'Password must be at least 6 characters'; return; }
+
+  const result = authMode === 'login' ? await signIn(email, pass) : await register(email, pass);
+  if (result.success) {
+    document.getElementById('auth-modal').classList.remove('show');
+    showToast('✅ Signed in as ' + currentUser.email.split('@')[0]);
+  } else {
+    errEl.textContent = result.error;
+  }
+});
+
+document.getElementById('auth-guest').addEventListener('click', () => {
+  document.getElementById('auth-modal').classList.remove('show');
+});
+
+document.getElementById('btn-cloud-save').addEventListener('click', () => {
+  saveCloudSave();
+  playUiClick();
+});
+
+document.getElementById('btn-logout').addEventListener('click', () => {
+  signOut();
+  document.getElementById('auth-modal').classList.remove('show');
+});
+
+// Auto-sync cloud save alongside local save
+const _origSaveGame = saveGame;
+saveGame = function() {
+  _origSaveGame();
+  if (currentUser) saveCloudSave();
+};
+
+// ── Check for saved session on load ──
+(function checkSavedSession() {
+  const savedUser = localStorage.getItem('coreReactorCurrentUser');
+  if (savedUser) {
+    currentUser = { uid: savedUser, email: savedUser };
+    updateLoginUI();
+    loadCloudSave();
+  }
+  initFirebase();
+})();
+</script>
+<script>
+// ══════════════════════════════════════════════
+//  OPTIONS / SETTINGS STATE
+// ══════════════════════════════════════════════
+const opts = {
+  volClick: 50, volSfx: 50,
+  theme: 'dark', compact: false, particles: true, animations: true,
+  holdToClick: false, offlineProgress: true, offlinePopup: true,
+  fpsCap: 60, lang: 'en'
+};
+
+function loadOpts() {
+  try {
+    const raw = localStorage.getItem('coreReactorOpts');
+    if (raw) Object.assign(opts, JSON.parse(raw));
+  } catch(e) {}
+}
+function saveOpts() {
+  try { localStorage.setItem('coreReactorOpts', JSON.stringify(opts)); } catch(e) {}
+}
+function applyOpts() {
+  document.body.classList.toggle('theme-light', opts.theme === 'light');
+  document.body.classList.toggle('compact-mode', opts.compact);
+  document.body.classList.toggle('no-particles', !opts.particles);
+  document.body.classList.toggle('no-animations', !opts.animations);
+  document.getElementById('opt-vol-click').value = opts.volClick;
+  document.getElementById('opt-vol-sfx').value = opts.volSfx;
+  document.getElementById('opt-theme').value = opts.theme;
+  document.getElementById('opt-compact').checked = opts.compact;
+  document.getElementById('opt-particles').checked = opts.particles;
+  document.getElementById('opt-animations').checked = opts.animations;
+  document.getElementById('opt-hold').checked = opts.holdToClick;
+  document.getElementById('opt-offline').checked = opts.offlineProgress;
+  document.getElementById('opt-offline-popup').checked = opts.offlinePopup;
+  document.getElementById('opt-fps').value = opts.fpsCap;
+  document.getElementById('opt-lang').value = opts.lang;
+  applyLang();
+}
+
+// ══════════════════════════════════════════════
+//  i18n
+// ══════════════════════════════════════════════
+const I18N = {
+  en: { energy:'Energy', perSec:'Per Second', perClick:'Per Click', plasmaCores:'Plasma Cores',
+    clickReactor:'Click the reactor', prestigeFor:'Prestige for', prestige:'PRESTIGE',
+    generators:'Generators', boosts:'Boosts', trophies:'Trophies',
+    settings:'SETTINGS', welcomeBack:'WELCOME BACK',
+    offlineSub:'Your reactors kept running while you were away',
+    collectEnergy:'COLLECT ENERGY' },
+  es: { energy:'Energía', perSec:'Por Segundo', perClick:'Por Clic', plasmaCores:'Núcleos de Plasma',
+    clickReactor:'Haz clic en el reactor', prestigeFor:'Prestigio por', prestige:'PRESTIGIO',
+    generators:'Generadores', boosts:'Mejoras', trophies:'Trofeos',
+    settings:'AJUSTES', welcomeBack:'BIENVENIDO',
+    offlineSub:'Tus reactores siguieron funcionando',
+    collectEnergy:'RECOGER ENERGÍA' },
+  fr: { energy:'Énergie', perSec:'Par Seconde', perClick:'Par Clic', plasmaCores:'Noyaux Plasma',
+    clickReactor:'Cliquez sur le réacteur', prestigeFor:'Prestige pour', prestige:'PRESTIGE',
+    generators:'Générateurs', boosts:'Améliorations', trophies:'Trophées',
+    settings:'PARAMÈTRES', welcomeBack:'BON RETOUR',
+    offlineSub:'Vos réacteurs ont continué à fonctionner',
+    collectEnergy:'COLLECTER L\'ÉNERGIE' },
+  de: { energy:'Energie', perSec:'Pro Sekunde', perClick:'Pro Klick', plasmaCores:'Plasmakerne',
+    clickReactor:'Klicke den Reaktor', prestigeFor:'Prestige für', prestige:'PRESTIGE',
+    generators:'Generatoren', boosts:'Boosts', trophies:'Trophäen',
+    settings:'EINSTELLUNGEN', welcomeBack:'WILLKOMMEN ZURÜCK',
+    offlineSub:'Deine Reaktoren liefen weiter',
+    collectEnergy:'ENERGIE SAMMELN' },
+  ja: { energy:'エネルギー', perSec:'毎秒', perClick:'クリック毎', plasmaCores:'プラズマコア',
+    clickReactor:'リアクターをクリック', prestigeFor:'プレステージ', prestige:'プレステージ',
+    generators:'ジェネレーター', boosts:'ブースト', trophies:'トロフィー',
+    settings:'設定', welcomeBack:'おかえりなさい',
+    offlineSub:'リアクターは稼働し続けていました',
+    collectEnergy:'エネルギーを回収' },
+};
+function applyLang() {
+  const dict = I18N[opts.lang] || I18N.en;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    if (dict[key]) el.textContent = dict[key];
+  });
+}
+
+// ══════════════════════════════════════════════
+//  AUDIO (Web Audio API synth)
+// ══════════════════════════════════════════════
+let audioCtx = null;
+function ensureAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+
+function playReactorClick() {
+  if (opts.volClick <= 0) return;
+  ensureAudio();
+  const vol = opts.volClick / 100 * 0.3;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(220, audioCtx.currentTime + 0.12);
+  gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+}
+
+function playUiClick() {
+  if (opts.volSfx <= 0) return;
+  ensureAudio();
+  const vol = opts.volSfx / 100 * 0.15;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'square';
+  osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.06);
+  gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(); osc.stop(audioCtx.currentTime + 0.08);
+}
+
+function playAchievement() {
+  if (opts.volSfx <= 0) return;
+  ensureAudio();
+  const vol = opts.volSfx / 100 * 0.2;
+  [523, 659, 784].forEach((freq, i) => {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.001, audioCtx.currentTime + i * 0.1);
+    gain.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + i * 0.1 + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + i * 0.1 + 0.25);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(audioCtx.currentTime + i * 0.1);
+    osc.stop(audioCtx.currentTime + i * 0.1 + 0.25);
+  });
+}
+
+// ══════════════════════════════════════════════
+//  GAME STATE
+// ══════════════════════════════════════════════
+let state = {
+  energy:0, totalEnergy:0, totalClicks:0, eps:0, epc:1,
+  prestigeCores:0, prestigeMultiplier:1, autoClickRate:0,
+  generators:{}, boosts:{}, achievements:new Set(), activeTab:'generators'
+};
+
+const GENERATORS = [
+  { id:'drone',      name:'Mining Drone',   icon:'🛸', baseEps:.1,    baseCost:15,     desc:'+0.1 energy/s' },
+  { id:'pylon',      name:'Energy Pylon',   icon:'⚡', baseEps:1,     baseCost:100,    desc:'+1 energy/s' },
+  { id:'forge',      name:'Plasma Forge',   icon:'🔥', baseEps:8,     baseCost:1100,   desc:'+8 energy/s' },
+  { id:'array',      name:'Solar Array',    icon:'☀️', baseEps:47,    baseCost:12000,  desc:'+47 energy/s' },
+  { id:'conduit',    name:'Void Conduit',   icon:'🌀', baseEps:260,   baseCost:130000, desc:'+260 energy/s' },
+  { id:'singularity',name:'Singularity',    icon:'🕳️', baseEps:1400,  baseCost:1.4e6,  desc:'+1.4K energy/s' },
+  { id:'dyson',      name:'Dyson Sphere',   icon:'🌐', baseEps:7800,  baseCost:2e7,    desc:'+7.8K energy/s' },
+  { id:'dimension',  name:'Dimension Rift', icon:'🔮', baseEps:44000, baseCost:3.3e8,  desc:'+44K energy/s' },
+];
+
+const BOOSTS = [
+  // ── PRE-PRESTIGE: Available from start (4) ──
+  // Early game — affordable within first few minutes
+  { id:'click2x',   name:'Double Click',    icon:'👆', cost:100,      desc:'2x click power',       clickMulti:2,   reqCores:0 },
+  { id:'click5x',   name:'Hyper Click',     icon:'🖐️', cost:5e3,      desc:'5x click power',       clickMulti:5,   reqCores:0 },
+  { id:'gen2x',     name:'Overclock',       icon:'⚙️', cost:2.5e4,    desc:'2x all generators',    genMulti:2,     reqCores:0 },
+  { id:'click10x',  name:'Quantum Click',   icon:'💥', cost:1e5,      desc:'10x click power',      clickMulti:10,  reqCores:0 },
+  // ── PRESTIGE I: 1+ cores (4) ──
+  // Post-first-prestige, with 10%+ multiplier running — costs in millions
+  { id:'gen5x',     name:'Hyperdrive',      icon:'🚀', cost:2e6,      desc:'5x all generators',    genMulti:5,     reqCores:1 },
+  { id:'eps2x',     name:'Flux Amplifier',  icon:'🔋', cost:8e6,      desc:'2x all EPS',           epsMulti:2,     reqCores:1 },
+  { id:'click100x', name:'Nova Tap',        icon:'✨', cost:2.5e7,    desc:'100x click power',     clickMulti:100, reqCores:1 },
+  { id:'gen10x',    name:'Warp Core',       icon:'🌟', cost:1e8,      desc:'10x all generators',   genMulti:10,    reqCores:1 },
+  // ── PRESTIGE II: 1,000 cores (4) ──
+  // 100x prestige multiplier — costs in trillions
+  { id:'eps5x',     name:'Dark Matter Lens',icon:'🔬', cost:5e11,     desc:'5x all EPS',           epsMulti:5,     reqCores:1e3 },
+  { id:'click500x', name:'Plasma Lance',    icon:'🗡️', cost:2e12,     desc:'500x click power',     clickMulti:500, reqCores:1e3 },
+  { id:'gen25x',    name:'Stellar Forge',   icon:'⭐', cost:8e12,     desc:'25x all generators',   genMulti:25,    reqCores:1e3 },
+  { id:'clickauto', name:'Neural Link',     icon:'🧠', cost:5e13,     desc:'+5 auto-clicks/sec',   autoClick:5,    reqCores:1e3 },
+  // ── PRESTIGE III: 1,000,000 cores (4) ──
+  // 100K multiplier — costs in quadrillions+
+  { id:'click1kx',  name:'Singularity Tap', icon:'🕳️', cost:1e16,     desc:'1Kx click power',      clickMulti:1000,reqCores:1e6 },
+  { id:'gen50x',    name:'Cosmic Engine',   icon:'💫', cost:5e16,     desc:'50x all generators',   genMulti:50,    reqCores:1e6 },
+  { id:'eps25x',    name:'Void Resonance',  icon:'🌊', cost:2e17,     desc:'25x all EPS',          epsMulti:25,    reqCores:1e6 },
+  { id:'clickauto2',name:'Hive Mind',       icon:'👁️', cost:1e18,     desc:'+25 auto-clicks/sec',  autoClick:25,   reqCores:1e6 },
+  // ── PRESTIGE IV: 1,000,000,000 cores (4) ──
+  // 100M multiplier — costs in sextillions+
+  { id:'click10kx', name:'Reality Shatter', icon:'💎', cost:5e21,     desc:'10Kx click power',     clickMulti:1e4, reqCores:1e9 },
+  { id:'gen500x',   name:'Galactic Forge',  icon:'🌌', cost:2e22,     desc:'500x all generators',  genMulti:500,   reqCores:1e9 },
+  { id:'eps100x',   name:'Entropy Harvest', icon:'⚗️', cost:8e22,     desc:'100x all EPS',         epsMulti:100,   reqCores:1e9 },
+  { id:'clickauto3',name:'Quantum Swarm',   icon:'🐝', cost:5e23,     desc:'+100 auto-clicks/sec', autoClick:100,  reqCores:1e9 },
+  // ── PRESTIGE V: 1,000,000,000,000 cores (3) ──
+  // 100B multiplier — costs in octillions+
+  { id:'click1mx',  name:'Omega Strike',    icon:'☄️', cost:1e27,     desc:'1Mx click power',      clickMulti:1e6, reqCores:1e12 },
+  { id:'gen5kx',    name:'Universe Engine', icon:'🪐', cost:5e27,     desc:'5Kx all generators',   genMulti:5000,  reqCores:1e12 },
+  { id:'eps1kx',    name:'Infinity Well',   icon:'♾️', cost:2e28,     desc:'1Kx all EPS',          epsMulti:1000,  reqCores:1e12 },
+  // ── PRESTIGE VI: 1,000,000,000,000,000 cores (3) ──
+  // 100T multiplier — costs in undecillions+
+  { id:'click1bx',  name:'Big Bang Tap',    icon:'🌋', cost:1e33,     desc:'1Bx click power',      clickMulti:1e9, reqCores:1e15 },
+  { id:'genmax',    name:'Multiverse Core', icon:'🧬', cost:5e33,     desc:'100Kx all generators', genMulti:1e5,   reqCores:1e15 },
+  { id:'epsmax',    name:'Ascendant Power', icon:'👑', cost:2e34,     desc:'100Kx all EPS',        epsMulti:1e5,   reqCores:1e15 },
+];
+
+const ACHIEVEMENTS = [
+  { id:'first_click', name:'First Spark',  icon:'⚡', check:()=>state.totalClicks>=1,      bonus:'clickAdd',value:1,    bonusDesc:'+1 click' },
+  { id:'click_100',   name:'Tap Addict',   icon:'👆', check:()=>state.totalClicks>=100,     bonus:'clickMulti',value:1.5,bonusDesc:'1.5x click' },
+  { id:'click_1000',  name:'Carpal Tunnel',icon:'🖱️', check:()=>state.totalClicks>=1000,    bonus:'clickMulti',value:2,  bonusDesc:'2x click' },
+  { id:'energy_1k',   name:'1K Energy',    icon:'🔋', check:()=>state.totalEnergy>=1000,    bonus:'epsMulti',value:1.1,  bonusDesc:'1.1x EPS' },
+  { id:'energy_1m',   name:'Megawatt',     icon:'💡', check:()=>state.totalEnergy>=1e6,     bonus:'epsMulti',value:1.25, bonusDesc:'1.25x EPS' },
+  { id:'energy_1b',   name:'Gigawatt',     icon:'🏭', check:()=>state.totalEnergy>=1e9,     bonus:'epsMulti',value:1.5,  bonusDesc:'1.5x EPS' },
+  { id:'first_gen',   name:'Automated',    icon:'🤖', check:()=>Object.values(state.generators).some(v=>v>0), bonus:'epsMulti',value:1.05,bonusDesc:'1.05x EPS' },
+  { id:'ten_drones',  name:'Drone Army',   icon:'🛸', check:()=>(state.generators.drone||0)>=10, bonus:'droneMulti',value:2,bonusDesc:'2x drones' },
+  { id:'first_prest', name:'Reborn',       icon:'🔮', check:()=>state.prestigeCores>0,      bonus:'clickMulti',value:3,  bonusDesc:'3x click' },
+  { id:'prestige_10', name:'Ascendant',    icon:'👑', check:()=>state.prestigeCores>=10,     bonus:'epsMulti',value:2,    bonusDesc:'2x EPS' },
+];
+
+// ══════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════
+function fmt(n) {
+  if (n < 1000) return Math.floor(n).toLocaleString();
+  const t=['','K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc','UDc'];
+  const tier=Math.min(Math.floor(Math.log10(Math.abs(n))/3),t.length-1);
+  const s=n/Math.pow(10,tier*3);
+  return s.toFixed(s<10?2:s<100?1:0)+t[tier];
+}
+function genCost(g,owned){ return Math.floor(g.baseCost*Math.pow(1.15,owned)); }
+
+function recalcAll() {
+  let epc=1;
+  BOOSTS.forEach(b=>{if(b.clickMulti&&state.boosts[b.id])epc*=b.clickMulti;});
+  ACHIEVEMENTS.forEach(a=>{
+    if(state.achievements.has(a.id)){
+      if(a.bonus==='clickAdd')epc+=a.value;
+      if(a.bonus==='clickMulti')epc*=a.value;
+    }
+  });
+  state.epc=epc;
+  let gm=1;
+  BOOSTS.forEach(b=>{if(b.genMulti&&state.boosts[b.id])gm*=b.genMulti;});
+  let bm=1; // boost-based EPS multiplier
+  BOOSTS.forEach(b=>{if(b.epsMulti&&state.boosts[b.id])bm*=b.epsMulti;});
+  let am=1,dm=1;
+  ACHIEVEMENTS.forEach(a=>{
+    if(state.achievements.has(a.id)){
+      if(a.bonus==='epsMulti')am*=a.value;
+      if(a.bonus==='droneMulti')dm*=a.value;
+    }
+  });
+  let eps=0;
+  GENERATORS.forEach(g=>{
+    let e=g.baseEps*(state.generators[g.id]||0);
+    if(g.id==='drone')e*=dm; eps+=e;
+  });
+  state.eps=eps*gm*bm*am*state.prestigeMultiplier;
+
+  // Auto-click from boosts
+  let autoClickRate=0;
+  BOOSTS.forEach(b=>{if(b.autoClick&&state.boosts[b.id])autoClickRate+=b.autoClick;});
+  state.autoClickRate=autoClickRate;
+}
+function calcPrestigeGain(){ return Math.floor(Math.pow(state.totalEnergy/1e6,0.5)); }
+
+// ══════════════════════════════════════════════
+//  ORBITING GENERATORS
+// ══════════════════════════════════════════════
+const ORBIT_CFG=[
+  {r:150,sp:0.4,max:12},{r:160,sp:-0.35,max:10},{r:170,sp:0.28,max:8},{r:180,sp:-0.22,max:7},
+  {r:190,sp:0.17,max:6},{r:200,sp:-0.13,max:5},{r:210,sp:0.10,max:4},{r:218,sp:-0.07,max:3},
+];
+let orbEls=[],orbTrails=[];
+function getOC(){const w=document.getElementById('reactor-wrapper');return{cx:w.offsetWidth/2,cy:w.offsetHeight/2,sc:w.offsetWidth/440};}
+function rebuildOrbits(){
+  const w=document.getElementById('reactor-wrapper');
+  orbEls.forEach(o=>o.el.remove());orbEls=[];
+  orbTrails.forEach(t=>t.remove());orbTrails=[];
+  const{cx,cy,sc}=getOC();
+  GENERATORS.forEach((g,gi)=>{
+    const owned=state.generators[g.id]||0; if(!owned)return;
+    const c=ORBIT_CFG[gi],r=c.r*sc,cnt=Math.min(owned,c.max);
+    const tr=document.createElement('div');tr.className='orbit-trail';
+    tr.style.cssText=`width:${r*2}px;height:${r*2}px;left:${cx-r}px;top:${cy-r}px;`;
+    w.appendChild(tr);orbTrails.push(tr);
+    for(let i=0;i<cnt;i++){
+      const el=document.createElement('div');el.className='orbit-icon';el.textContent=g.icon;
+      w.appendChild(el);orbEls.push({el,gi,i,tot:cnt});
+    }
+  });
+}
+let orbT=0;
+function updateOrbits(dt){
+  if(!opts.animations){orbEls.forEach(o=>{const c=ORBIT_CFG[o.gi],{cx,cy,sc}=getOC(),r=c.r*sc;const a=(o.i/o.tot)*Math.PI*2;o.el.style.left=(cx+Math.cos(a)*r)+'px';o.el.style.top=(cy+Math.sin(a)*r)+'px';});return;}
+  orbT+=dt;const{cx,cy,sc}=getOC();
+  orbEls.forEach(o=>{const c=ORBIT_CFG[o.gi],r=c.r*sc,a=orbT*c.sp+(o.i/o.tot)*Math.PI*2;o.el.style.left=(cx+Math.cos(a)*r)+'px';o.el.style.top=(cy+Math.sin(a)*r)+'px';});
+}
+let lastGH='';
+function checkRebuild(){const h=GENERATORS.map(g=>(state.generators[g.id]||0)).join(',');if(h!==lastGH){lastGH=h;rebuildOrbits();}}
+
+// ══════════════════════════════════════════════
+//  RENDERING
+// ══════════════════════════════════════════════
+function renderBoostsHud(){
+  let p='';
+  BOOSTS.forEach(b=>{if(state.boosts[b.id])p+=`<div class="boost-pill"><span class="pill-icon">${b.icon}</span>${b.name}</div>`;});
+  ACHIEVEMENTS.forEach(a=>{if(state.achievements.has(a.id))p+=`<div class="boost-pill trophy"><span class="pill-icon">${a.icon}</span>${a.bonusDesc}</div>`;});
+  document.getElementById('boosts-hud').innerHTML=p;
+}
+function renderUpgrades(){
+  const list=document.getElementById('upgrades-list');
+  if(state.activeTab==='generators'){
+    list.innerHTML=GENERATORS.map(g=>{
+      const o=state.generators[g.id]||0,c=genCost(g,o),l=state.energy<c;
+      return `<div class="upgrade-card ${l?'locked':''}" data-type="gen" data-id="${g.id}"><div class="upgrade-icon">${g.icon}</div><div class="upgrade-info"><h3>${g.name}</h3><div class="desc">${g.desc}</div><div class="owned">Owned: ${o}</div></div><div class="upgrade-cost">${fmt(c)}</div></div>`;
+    }).join('');
+  } else if(state.activeTab==='boosts'){
+    const tierNames={0:'STARTER',1:'PRESTIGE I',1e3:'PRESTIGE II — 1K CORES',1e6:'PRESTIGE III — 1M CORES',1e9:'PRESTIGE IV — 1B CORES',1e12:'PRESTIGE V — 1T CORES',1e15:'PRESTIGE VI — 1Qa CORES'};
+    let lastTier=-1;
+    let html='';
+    BOOSTS.forEach(b=>{
+      // Tier header
+      if(b.reqCores!==lastTier){
+        lastTier=b.reqCores;
+        const unlocked=state.prestigeCores>=b.reqCores;
+        const tierLabel=tierNames[b.reqCores]||('TIER '+b.reqCores);
+        html+=`<div style="padding:8px 14px;font-family:'Orbitron',sans-serif;font-size:.55rem;letter-spacing:2px;color:${unlocked?'var(--neon-magenta)':'var(--text-dim)'};border-bottom:1px solid var(--border);text-transform:uppercase;">${unlocked?'🔓':'🔒'} ${tierLabel}</div>`;
+      }
+      // Check if tier is unlocked
+      if(state.prestigeCores<b.reqCores){
+        html+=`<div class="upgrade-card locked" style="opacity:.2"><div class="upgrade-icon">${b.icon}</div><div class="upgrade-info"><h3>${b.name}</h3><div class="desc">Requires ${fmt(b.reqCores)} Plasma Cores</div></div><div class="upgrade-cost">🔒</div></div>`;
+        return;
+      }
+      if(state.boosts[b.id]){
+        html+=`<div class="upgrade-card" style="opacity:.5"><div class="upgrade-icon">${b.icon}</div><div class="upgrade-info"><h3>${b.name}</h3><div class="desc" style="color:var(--neon-green)">✓ Active</div></div><div class="upgrade-cost">—</div></div>`;
+        return;
+      }
+      const l=state.energy<b.cost;
+      html+=`<div class="upgrade-card ${l?'locked':''}" data-type="boost" data-id="${b.id}"><div class="upgrade-icon">${b.icon}</div><div class="upgrade-info"><h3>${b.name}</h3><div class="desc">${b.desc}</div></div><div class="upgrade-cost">${fmt(b.cost)}</div></div>`;
+    });
+    list.innerHTML=html;
+  } else {
+    list.innerHTML=`<div class="achievements-grid">${ACHIEVEMENTS.map(a=>`<div class="achievement ${state.achievements.has(a.id)?'unlocked':''}"><div class="ach-icon">${a.icon}</div><div class="ach-name">${a.name}</div><div class="ach-bonus">${a.bonusDesc}</div></div>`).join('')}</div>`;
+  }
+}
+function updateDisplay(){
+  document.getElementById('energy').textContent=fmt(state.energy);
+  document.getElementById('eps').textContent=fmt(state.eps)+'/s';
+  document.getElementById('epc').textContent=fmt(state.epc*state.prestigeMultiplier);
+  document.getElementById('prestige-cores').textContent=fmt(state.prestigeCores);
+  const pg=calcPrestigeGain();
+  document.getElementById('prestige-gain').textContent=fmt(pg);
+  document.getElementById('prestige-btn').disabled=pg<1;
+}
+
+// ══════════════════════════════════════════════
+//  ANTI-AUTOCLICKER
+// ══════════════════════════════════════════════
+const antiCheat = {
+  clickTimes: [],        // timestamps of recent clicks
+  clickCoords: [],       // recent {x,y} positions
+  warnings: 0,           // strike counter
+  blocked: false,        // currently blocked?
+  blockUntil: 0,         // timestamp when block lifts
+  maxCPS: 25,            // max clicks per second allowed
+  windowMs: 2000,        // detection window
+  coordThreshold: 3,     // pixel variance threshold
+  timingThreshold: 5,    // ms variance threshold for perfect timing
+};
+
+function checkAutoClicker(e) {
+  const now = Date.now();
+  const ac = antiCheat;
+
+  // If currently blocked, check if penalty expired
+  if (ac.blocked) {
+    if (now < ac.blockUntil) return false; // still blocked
+    ac.blocked = false;
+    ac.warnings = Math.max(0, ac.warnings - 1);
+    document.getElementById('ac-overlay').classList.remove('show');
+  }
+
+  // Record click time
+  ac.clickTimes.push(now);
+  // Keep only clicks within the detection window
+  ac.clickTimes = ac.clickTimes.filter(t => now - t < ac.windowMs);
+
+  // Record coords if available
+  if (e && e.clientX !== undefined) {
+    ac.clickCoords.push({ x: e.clientX, y: e.clientY, t: now });
+    if (ac.clickCoords.length > 30) ac.clickCoords = ac.clickCoords.slice(-30);
+  }
+
+  // ── Check 1: Click rate too high ──
+  const cps = ac.clickTimes.length / (ac.windowMs / 1000);
+  if (cps > ac.maxCPS) {
+    return triggerAntiCheat('Clicking too fast');
+  }
+
+  // ── Check 2: Identical coordinates (10+ clicks in exact same pixel) ──
+  if (ac.clickCoords.length >= 10) {
+    const recent = ac.clickCoords.slice(-10);
+    const allSamePos = recent.every(c =>
+      Math.abs(c.x - recent[0].x) < ac.coordThreshold &&
+      Math.abs(c.y - recent[0].y) < ac.coordThreshold
+    );
+    if (allSamePos) {
+      return triggerAntiCheat('Suspicious click pattern');
+    }
+  }
+
+  // ── Check 3: Perfectly even timing (bot-like intervals) ──
+  if (ac.clickTimes.length >= 8) {
+    const recent = ac.clickTimes.slice(-8);
+    const intervals = [];
+    for (let i = 1; i < recent.length; i++) intervals.push(recent[i] - recent[i-1]);
+    const avg = intervals.reduce((a,b) => a+b, 0) / intervals.length;
+    const variance = intervals.reduce((a,b) => a + Math.abs(b - avg), 0) / intervals.length;
+    // Human clicks have natural variance; bots are perfectly timed
+    if (variance < ac.timingThreshold && avg < 150) {
+      return triggerAntiCheat('Robotic click pattern');
+    }
+  }
+
+  return true; // click is allowed
+}
+
+function triggerAntiCheat(reason) {
+  const ac = antiCheat;
+  ac.warnings++;
+
+  // Escalating penalties: 3s, 10s, 30s, 60s
+  const penalties = [3000, 10000, 30000, 60000];
+  const penaltyMs = penalties[Math.min(ac.warnings - 1, penalties.length - 1)];
+
+  ac.blocked = true;
+  ac.blockUntil = Date.now() + penaltyMs;
+  ac.clickTimes = [];
+  ac.clickCoords = [];
+
+  // Show verification overlay
+  showAntiCheatChallenge(reason, penaltyMs);
+  return false;
+}
+
+function showAntiCheatChallenge(reason, penaltyMs) {
+  const overlay = document.getElementById('ac-overlay');
+  document.getElementById('ac-reason').textContent = reason;
+  document.getElementById('ac-penalty').textContent = 
+    `Clicking disabled for ${Math.round(penaltyMs/1000)}s`;
+
+  // Generate simple math CAPTCHA
+  const a = Math.floor(Math.random() * 20) + 5;
+  const b = Math.floor(Math.random() * 15) + 3;
+  const answer = a + b;
+  document.getElementById('ac-question').textContent = `${a} + ${b} = ?`;
+  document.getElementById('ac-input').value = '';
+  document.getElementById('ac-input').dataset.answer = answer;
+  document.getElementById('ac-error').textContent = '';
+
+  overlay.classList.add('show');
+
+  // Auto-dismiss when penalty expires
+  setTimeout(() => {
+    if (antiCheat.blocked && Date.now() >= antiCheat.blockUntil) {
+      antiCheat.blocked = false;
+      overlay.classList.remove('show');
+    }
+  }, penaltyMs + 100);
+}
+
+// ══════════════════════════════════════════════
+//  CLICKING
+// ══════════════════════════════════════════════
+function doClick(e){
+  // Anti-autoclicker gate (skip check for hold-to-click since that's a legit feature)
+  if (!e?._holdClick && !checkAutoClicker(e)) return;
+  
+  const amount=state.epc*state.prestigeMultiplier;
+  state.energy+=amount;state.totalEnergy+=amount;state.totalClicks++;
+  playReactorClick();
+  if(opts.particles&&e){
+    const rect=document.getElementById('reactor-wrapper').getBoundingClientRect();
+    const x=e.clientX-rect.left,y=e.clientY-rect.top;
+    spawnFloat(x-20,y-20,amount);spawnParts(x,y);
+  }
+}
+function spawnFloat(x,y,amt){
+  const el=document.createElement('div');el.className='float-number';el.textContent='+'+fmt(amt);
+  el.style.left=x+'px';el.style.top=y+'px';
+  document.getElementById('reactor-wrapper').appendChild(el);
+  setTimeout(()=>el.remove(),900);
+}
+function spawnParts(x,y){
+  const w=document.getElementById('reactor-wrapper');
+  for(let i=0;i<6;i++){
+    const p=document.createElement('div');p.className='particle';
+    const a=Math.random()*Math.PI*2,d=40+Math.random()*60;
+    p.style.cssText=`left:${x}px;top:${y}px;background:var(--neon-cyan);box-shadow:0 0 6px var(--neon-cyan);--dx:${Math.cos(a)*d}px;--dy:${Math.sin(a)*d}px;animation:particle-burst .5s ease-out forwards;`;
+    w.appendChild(p);setTimeout(()=>p.remove(),500);
+  }
+}
+
+document.getElementById('reactor-btn').addEventListener('click',doClick);
+
+// Anti-cheat CAPTCHA verify
+document.getElementById('ac-submit').addEventListener('click', () => {
+  const input = document.getElementById('ac-input');
+  const answer = parseInt(input.dataset.answer);
+  const guess = parseInt(input.value);
+  if (guess === answer) {
+    antiCheat.blocked = false;
+    antiCheat.blockUntil = 0;
+    document.getElementById('ac-overlay').classList.remove('show');
+    showToast('✅ Verified — happy clicking!');
+  } else {
+    document.getElementById('ac-error').textContent = 'Wrong answer, try again';
+    input.value = '';
+    input.focus();
+  }
+});
+document.getElementById('ac-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('ac-submit').click();
+});
+
+// Hold-to-click
+let holdInterval=null;
+document.getElementById('reactor-btn').addEventListener('pointerdown',e=>{
+  if(!opts.holdToClick)return;
+  holdInterval=setInterval(()=>{
+    const fakeE = { clientX: e.clientX, clientY: e.clientY, _holdClick: true };
+    doClick(fakeE);
+  },100);
+});
+['pointerup','pointerleave','pointercancel'].forEach(ev=>{
+  document.getElementById('reactor-btn').addEventListener(ev,()=>{
+    if(holdInterval){clearInterval(holdInterval);holdInterval=null;}
+  });
+});
+
+// ══════════════════════════════════════════════
+//  PURCHASES
+// ══════════════════════════════════════════════
+function tryPurchase(card){
+  if(!card||card.classList.contains('locked'))return false;
+  const type=card.dataset.type,id=card.dataset.id;
+  if(!type||!id)return false;
+  if(type==='gen'){
+    const gen=GENERATORS.find(g=>g.id===id),o=state.generators[id]||0,c=genCost(gen,o);
+    if(state.energy>=c){state.energy-=c;state.generators[id]=o+1;playUiClick();recalcAll();renderUpgrades();checkRebuild();return true;}
+  } else if(type==='boost'){
+    const b=BOOSTS.find(b=>b.id===id);
+    if(b&&state.energy>=b.cost&&!state.boosts[id]&&state.prestigeCores>=(b.reqCores||0)){
+      state.energy-=b.cost;state.boosts[id]=true;playUiClick();recalcAll();renderUpgrades();renderBoostsHud();return true;
+    }
+  }
+  return false;
+}
+
+document.getElementById('upgrades-list').addEventListener('click',e=>{
+  tryPurchase(e.target.closest('.upgrade-card'));
+});
+
+// Hold-to-buy on upgrades list (rapid purchase generators)
+let holdBuyInterval=null;
+document.getElementById('upgrades-list').addEventListener('pointerdown',e=>{
+  if(!opts.holdToClick)return;
+  const card=e.target.closest('.upgrade-card');
+  if(!card||card.classList.contains('locked'))return;
+  // Only rapid-buy generators (boosts are one-time)
+  if(card.dataset.type==='gen'){
+    holdBuyInterval=setInterval(()=>{
+      const freshCard=document.querySelector(`.upgrade-card[data-id="${card.dataset.id}"]`);
+      if(!freshCard||!tryPurchase(freshCard)){clearInterval(holdBuyInterval);holdBuyInterval=null;}
+    },120);
+  }
+});
+['pointerup','pointerleave','pointercancel'].forEach(ev=>{
+  document.getElementById('upgrades-list').addEventListener(ev,()=>{
+    if(holdBuyInterval){clearInterval(holdBuyInterval);holdBuyInterval=null;}
+  });
+});
+
+// ══════════════════════════════════════════════
+//  TABS
+// ══════════════════════════════════════════════
+function switchTab(tab){
+  document.querySelectorAll('.panel-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelector(`.panel-tab[data-tab="${tab}"]`).classList.add('active');
+  state.activeTab=tab;renderUpgrades();playUiClick();
+}
+document.querySelectorAll('.panel-tab').forEach(tab=>{
+  tab.addEventListener('click',()=>switchTab(tab.dataset.tab));
+});
+
+// ══════════════════════════════════════════════
+//  PRESTIGE
+// ══════════════════════════════════════════════
+function doPrestige(){
+  const gain=calcPrestigeGain();if(gain<1)return;
+  if(!confirm(`Prestige for ${fmt(gain)} Plasma Cores? Resets energy & generators, keeps boosts & trophies.`))return;
+  state.prestigeCores+=gain;state.prestigeMultiplier=1+state.prestigeCores*0.1;
+  state.energy=0;state.totalEnergy=0;state.generators={};
+  recalcAll();renderUpgrades();checkRebuild();renderBoostsHud();
+}
+document.getElementById('prestige-btn').addEventListener('click',doPrestige);
+
+// ══════════════════════════════════════════════
+//  ACHIEVEMENTS
+// ══════════════════════════════════════════════
+function checkAchievements(){
+  let n=false;
+  ACHIEVEMENTS.forEach(a=>{
+    if(!state.achievements.has(a.id)&&a.check()){
+      state.achievements.add(a.id);showToast(`🏆 ${a.name} — ${a.bonusDesc}`);
+      playAchievement();n=true;
+      if(state.activeTab==='achievements')renderUpgrades();
+    }
+  });
+  if(n){recalcAll();renderBoostsHud();}
+}
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ══════════════════════════════════════════════
+//  SAVE / LOAD
+// ══════════════════════════════════════════════
+function saveGame(){
+  try{
+    localStorage.setItem('coreReactorSave',JSON.stringify({
+      energy:state.energy,totalEnergy:state.totalEnergy,totalClicks:state.totalClicks,
+      prestigeCores:state.prestigeCores,prestigeMultiplier:state.prestigeMultiplier,
+      generators:state.generators,boosts:state.boosts,
+      achievements:[...state.achievements],lastSave:Date.now()
+    }));
+    const ind=document.getElementById('save-indicator');
+    ind.classList.add('show');setTimeout(()=>ind.classList.remove('show'),1500);
+  }catch(e){}
+}
+function loadGame(){
+  try{
+    const raw=localStorage.getItem('coreReactorSave');if(!raw)return false;
+    const d=JSON.parse(raw);
+    state.energy=d.energy||0;state.totalEnergy=d.totalEnergy||0;state.totalClicks=d.totalClicks||0;
+    state.prestigeCores=d.prestigeCores||0;state.prestigeMultiplier=d.prestigeMultiplier||1;
+    state.generators=d.generators||{};state.boosts=d.boosts||{};
+    state.achievements=new Set(d.achievements||[]);
+    return d.lastSave||false;
+  }catch(e){return false;}
+}
+function exportSave(){
+  const raw=localStorage.getItem('coreReactorSave');
+  return raw?btoa(raw):'';
+}
+function importSave(str){
+  try{
+    const json=atob(str);const d=JSON.parse(json);
+    localStorage.setItem('coreReactorSave',json);
+    loadGame();recalcAll();renderUpgrades();checkRebuild();renderBoostsHud();updateDisplay();
+    showToast('✅ Save imported successfully!');return true;
+  }catch(e){showToast('❌ Invalid save data');return false;}
+}
+function hardReset(){
+  if(!confirm('Are you sure? This will permanently erase ALL progress including Plasma Cores.'))return;
+  if(!confirm('REALLY delete everything? This cannot be undone.'))return;
+  localStorage.removeItem('coreReactorSave');location.reload();
+}
+
+function fmtDur(ms){
+  const s=Math.floor(ms/1000);
+  if(s<60)return s+' seconds';
+  const m=Math.floor(s/60);if(m<60)return m+' minute'+(m!==1?'s':'');
+  const h=Math.floor(m/60),rm=m%60;if(h<24)return h+'h '+rm+'m';
+  return Math.floor(h/24)+'d '+(h%24)+'h '+rm+'m';
+}
+function showOffline(lastSave){
+  if(!opts.offlineProgress)return;
+  const elapsed=Date.now()-lastSave;if(elapsed<10000)return;
+  recalcAll();const earned=state.eps*(elapsed/1000);if(earned<=0)return;
+  if(!opts.offlinePopup){
+    state.energy+=earned;state.totalEnergy+=earned;
+    showToast('⚡ +'+fmt(earned)+' offline energy');return;
+  }
+  document.getElementById('offline-amount').textContent='+'+fmt(earned)+' energy';
+  document.getElementById('offline-time').textContent='Away for '+fmtDur(elapsed);
+  document.getElementById('offline-modal').classList.add('show');
+  document.getElementById('offline-collect').onclick=()=>{
+    state.energy+=earned;state.totalEnergy+=earned;
+    document.getElementById('offline-modal').classList.remove('show');
+    showToast('⚡ Collected '+fmt(earned)+' offline energy!');
+  };
+}
+
+setInterval(saveGame,30000);
+window.addEventListener('beforeunload',saveGame);
+
+// ══════════════════════════════════════════════
+//  SETTINGS UI WIRING
+// ══════════════════════════════════════════════
+function toggleSettings(show){
+  document.getElementById('settings-overlay').classList.toggle('show',show);
+}
+document.getElementById('settings-toggle').addEventListener('click',()=>toggleSettings(true));
+document.getElementById('settings-close').addEventListener('click',()=>toggleSettings(false));
+document.getElementById('settings-overlay').addEventListener('click',e=>{
+  if(e.target===e.currentTarget)toggleSettings(false);
+});
+
+// Audio sliders
+document.getElementById('opt-vol-click').addEventListener('input',e=>{opts.volClick=+e.target.value;saveOpts();});
+document.getElementById('opt-vol-sfx').addEventListener('input',e=>{opts.volSfx=+e.target.value;saveOpts();});
+// Theme
+document.getElementById('opt-theme').addEventListener('change',e=>{opts.theme=e.target.value;applyOpts();saveOpts();});
+// Compact
+document.getElementById('opt-compact').addEventListener('change',e=>{opts.compact=e.target.checked;applyOpts();saveOpts();});
+// Particles
+document.getElementById('opt-particles').addEventListener('change',e=>{opts.particles=e.target.checked;applyOpts();saveOpts();});
+// Animations
+document.getElementById('opt-animations').addEventListener('change',e=>{opts.animations=e.target.checked;applyOpts();saveOpts();});
+// Hold to click
+document.getElementById('opt-hold').addEventListener('change',e=>{opts.holdToClick=e.target.checked;saveOpts();});
+// Offline progress
+document.getElementById('opt-offline').addEventListener('change',e=>{opts.offlineProgress=e.target.checked;saveOpts();});
+document.getElementById('opt-offline-popup').addEventListener('change',e=>{opts.offlinePopup=e.target.checked;saveOpts();});
+// FPS
+document.getElementById('opt-fps').addEventListener('change',e=>{opts.fpsCap=+e.target.value;saveOpts();});
+// Language
+document.getElementById('opt-lang').addEventListener('change',e=>{opts.lang=e.target.value;applyOpts();saveOpts();});
+
+// Save buttons
+document.getElementById('btn-save').addEventListener('click',()=>{saveGame();playUiClick();showToast('💾 Game saved!');});
+document.getElementById('btn-export').addEventListener('click',()=>{
+  const box=document.getElementById('export-box');box.style.display='block';
+  box.value=exportSave();box.select();playUiClick();
+});
+document.getElementById('btn-import').addEventListener('click',()=>{
+  document.getElementById('export-box').style.display='block';
+  document.getElementById('export-box').value='';
+  document.getElementById('export-box').placeholder='Paste your save data here...';
+  document.getElementById('import-actions').style.display='flex';
+  playUiClick();
+});
+document.getElementById('btn-import-confirm').addEventListener('click',()=>{
+  importSave(document.getElementById('export-box').value.trim());
+  document.getElementById('import-actions').style.display='none';
+  document.getElementById('export-box').style.display='none';
+});
+document.getElementById('btn-import-cancel').addEventListener('click',()=>{
+  document.getElementById('import-actions').style.display='none';
+  document.getElementById('export-box').style.display='none';
+});
+// Prestige & reset from settings
+document.getElementById('btn-prestige-settings').addEventListener('click',()=>{toggleSettings(false);doPrestige();});
+document.getElementById('btn-hard-reset').addEventListener('click',()=>{hardReset();});
+
+// ══════════════════════════════════════════════
+//  HOTKEYS
+// ══════════════════════════════════════════════
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT')return;
+  if(e.key==='s'&&!e.ctrlKey){toggleSettings(!document.getElementById('settings-overlay').classList.contains('show'));e.preventDefault();}
+  if(e.key==='s'&&e.ctrlKey){e.preventDefault();saveGame();showToast('💾 Game saved!');}
+  if(e.key==='1')switchTab('generators');
+  if(e.key==='2')switchTab('boosts');
+  if(e.key==='3')switchTab('achievements');
+  if(e.key===' '||e.key==='Spacebar'){e.preventDefault();doClick(null);}
+});
+
+// ══════════════════════════════════════════════
+//  GAME LOOP (with FPS cap)
+// ══════════════════════════════════════════════
+let last=performance.now(),fpsAccum=0;
+function tick(now){
+  const dt=(now-last)/1000;last=now;
+  state.energy+=state.eps*dt;state.totalEnergy+=state.eps*dt;
+  // Auto-click from boosts (adds click-value energy per second)
+  if(state.autoClickRate>0){
+    const autoEnergy=state.epc*state.prestigeMultiplier*state.autoClickRate*dt;
+    state.energy+=autoEnergy;state.totalEnergy+=autoEnergy;
+  }
+  fpsAccum+=dt;
+  const interval=1/opts.fpsCap;
+  if(fpsAccum>=interval){
+    fpsAccum-=interval;
+    updateOrbits(interval);updateDisplay();checkAchievements();
+  }
+  requestAnimationFrame(tick);
+}
+setInterval(()=>{renderUpgrades();checkRebuild();},500);
+
+// ══════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════
+loadOpts();
+const lastSave=loadGame();
+recalcAll();applyOpts();
+renderUpgrades();checkRebuild();renderBoostsHud();updateDisplay();
+if(lastSave)showOffline(lastSave);
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
