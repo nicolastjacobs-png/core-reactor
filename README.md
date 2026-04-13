@@ -3,8 +3,8 @@
 A sci-fi idle clicker game — tap the reactor, build generators, prestige for Plasma Cores, and ascend through 7 tiers of boosts.
 
 ## 🎮 Play Now
-**[Play CORE REACTOR](https://yourusername.github.io/core-reactor/)**
-*(Replace `yourusername` with your GitHub username after deploying)*
+**[Play CORE REACTOR](https://nicolastjacobs-png.github.io/core-reactor/)**
+
 
 ## ✨ Features
 - **Click & Earn** — Tap the reactor core to generate energy
